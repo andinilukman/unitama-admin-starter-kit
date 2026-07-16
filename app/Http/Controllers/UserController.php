@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
 class UserController extends Controller
 {
@@ -13,24 +15,63 @@ class UserController extends Controller
     {
         return view('user.index', [
             'title' => 'User',
+            'users' => User::latest()->get(),
         ]);
     }
-
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
-        //
+         return view('user.create', [
+            'title' => 'Tambah User',
+        ]);
     }
+    
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8',
+            'password_confirmation' => 'required|same:password', 
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg|max:1048', 
+            'role' => 'required|in:Superadmin,Admin',
+        ], [
+            'name.required' => 'Nama tidak boleh kosong.',
+            'name.max' => 'Nama tidak boleh lebih dari :max karakter.',
+            'email.required' => 'Email tidak boleh kosong.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email sudah terdaftar.',
+            'password.required' => 'Password tidak boleh kosong.',
+            'password.min' => 'Password minimal harus :min karakter.',
+            'role.required' => 'Role harus dipilih.',
+            'role.in' => 'Role yang dipilih tidak valid.',
+        ]);
+
+
+
+        try {
+
+            if($request->file('avatar')) {
+                $validated['avatar'] = $request->file('avatar')->store('avatar', 'public');
+            }
+            DB::beginTransaction();
+            $user = User::create($validated);
+            DB::commit();
+            return to_route('user.index')->withSuccess('Data berhasil ditambahkan');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            dd($e->getMessage());
+            return to_route('user.create')->withError('Data gagal ditambahkan' );
+        }
+
     }
+
 
     /**
      * Display the specified resource.

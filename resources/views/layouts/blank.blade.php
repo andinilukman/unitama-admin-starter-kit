@@ -8,6 +8,12 @@
 
         </div>
 
+        <div class="card show p-3">
+
+
+        </div>
+
+
         @push('modals')
         @endpush
 
